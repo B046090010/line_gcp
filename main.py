@@ -40,18 +40,38 @@ def callback():
 
     return 'OK'
 
+@app.route("/get_users", methods=['GET'])
+def get_users():
+    
+    test_result = line_bot_api.get_followers_ids()
+    print(test_result.user_ids)
+    print(test_result.next)
+    return 'OK'
+
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
+    # publisher = pubsub_v1.PublisherClient()
+    # topic_path = publisher.topic_path(project_id, topic_id)
+    # data_str = event.message.text
+    # data = data_str.encode("utf-8")
+    # future = publisher.publish(topic_path, data)
+    # print(f"Published messages to {topic_path}.")
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=event.message.text))
+
+@handler.add(MessageEvent, message=TextMessage)
+def handle_pubsub(event):
     publisher = pubsub_v1.PublisherClient()
     topic_path = publisher.topic_path(project_id, topic_id)
     data_str = event.message.text
     data = data_str.encode("utf-8")
     future = publisher.publish(topic_path, data)
     print(f"Published messages to {topic_path}.")
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=event.message.text))
+    # line_bot_api.reply_message(
+    #     event.reply_token,
+    #     TextSendMessage(text=event.message.text))
 
 if __name__ == "__main__":
     app.run()
