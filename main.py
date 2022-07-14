@@ -1,6 +1,7 @@
 from flask import Flask, request, abort
 from google.cloud import pubsub_v1
 import os
+import json
 
 from linebot import (
     LineBotApi, WebhookHandler
@@ -9,18 +10,24 @@ from linebot.exceptions import (
     InvalidSignatureError
 )
 from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
+    MessageEvent, TextMessage, TextSendMessage, FollowEvent, UnfollowEvent
 )
 
 app = Flask(__name__)
 
 
-line_bot_api = LineBotApi(os.environ['CHANNEL_ACCESS_TOKEN'])
+# line_bot_api = LineBotApi(os.environ['CHANNEL_ACCESS_TOKEN'])
 handler = WebhookHandler(os.environ['CHANNEL_SECRET'])
 
 project_id = "wingwill-demo-lab-jeff"
 topic_id = "line_pubsub"
 
+publisher = pubsub_v1.PublisherClient()
+topic_path = publisher.topic_path(project_id, topic_id)
+
+@app.route("/", methods=['POST'])
+def hello_world():
+    return 'OK'
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -40,38 +47,54 @@ def callback():
 
     return 'OK'
 
-@app.route("/get_users", methods=['GET'])
-def get_users():
-    
-    test_result = line_bot_api.get_followers_ids()
-    print(test_result.user_ids)
-    print(test_result.next)
-    return 'OK'
-
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    # publisher = pubsub_v1.PublisherClient()
-    # topic_path = publisher.topic_path(project_id, topic_id)
-    # data_str = event.message.text
-    # data = data_str.encode("utf-8")
-    # future = publisher.publish(topic_path, data)
-    # print(f"Published messages to {topic_path}.")
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=event.message.text))
+    
+    output = {
+        'id':  event.message.id,
+        'text': event.message.text, 
+        'timestamp': event.timestamp,
+        'source_user': event.source.user_id
+    }
+    
+    print(output)
+    output = json.dumps(output).encode("utf-8")
 
-@handler.add(MessageEvent, message=TextMessage)
-def handle_pubsub(event):
-    publisher = pubsub_v1.PublisherClient()
-    topic_path = publisher.topic_path(project_id, topic_id)
-    data_str = event.message.text
-    data = data_str.encode("utf-8")
-    future = publisher.publish(topic_path, data)
+    future = publisher.publish(topic_path, output)
     print(f"Published messages to {topic_path}.")
-    # line_bot_api.reply_message(
-    #     event.reply_token,
-    #     TextSendMessage(text=event.message.text))
+
+@handler.add(FollowEvent)
+def handle_follow(follwer):
+    # do something
+    
+    output = {
+        'timestamp': follwer.timestamp,
+        'source_user': follwer.source.user_id,
+        'action': 'follow'
+    }
+    
+    print(output)
+    output = json.dumps(output).encode("utf-8")
+
+    future = publisher.publish(topic_path, output)
+    print(f"Published messages to {topic_path}.")
+
+@handler.add(UnfollowEvent)
+def handle_follow(unfollwer):
+    # do something
+    
+    output = {
+        'timestamp': unfollwer.timestamp,
+        'source_user': unfollwer.source.user_id,
+        'action': 'unfollow'
+    }
+    
+    print(output)
+    output = json.dumps(output).encode("utf-8")
+
+    future = publisher.publish(topic_path, output)
+    print(f"Published messages to {topic_path}.")
 
 if __name__ == "__main__":
     app.run()
