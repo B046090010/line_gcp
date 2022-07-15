@@ -48,21 +48,21 @@ def callback():
     return 'OK'
 
 
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
+# @handler.add(MessageEvent, message=TextMessage)
+# def handle_message(event):
     
-    output = {
-        'id':  event.message.id,
-        'text': event.message.text, 
-        'timestamp': event.timestamp,
-        'source_user': event.source.user_id
-    }
+#     output = {
+#         'id':  event.message.id,
+#         'text': event.message.text, 
+#         'timestamp': event.timestamp,
+#         'source_user': event.source.user_id
+#     }
     
-    print(output)
-    output = json.dumps(output).encode("utf-8")
+#     print(output)
+#     output = json.dumps(output).encode("utf-8")
 
-    future = publisher.publish(topic_path, output)
-    print(f"Published messages to {topic_path}.")
+#     future = publisher.publish(topic_path, output)
+#     print(f"Published messages to {topic_path}.")
 
 @handler.add(FollowEvent)
 def handle_follow(follwer):
@@ -81,7 +81,7 @@ def handle_follow(follwer):
     print(f"Published messages to {topic_path}.")
 
 @handler.add(UnfollowEvent)
-def handle_follow(unfollwer):
+def handle_unfollow(unfollwer):
     # do something
     
     output = {
